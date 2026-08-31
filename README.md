@@ -95,7 +95,7 @@ Reports capture structured output differences, shape or dtype mismatches, input-
 
 ## Public repros
 
-The [`repros`](repros) directory contains executable adaptations of public PyTorch compiler issues. They are regression examples, not claims that every historical issue still fails on every framework, operating system, or accelerator version.
+The [`repros`](repros) directory contains executable adaptations of public PyTorch compiler issues. See [REPRODUCTIONS.md](REPRODUCTIONS.md) for bounded stable/nightly and CPU replay results. They are regression examples, not claims that every historical issue still fails on every framework, operating system, or accelerator version.
 
 ## Current scope
 
