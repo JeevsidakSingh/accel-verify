@@ -1,0 +1,70 @@
+name: Accel-Verify
+description: Block CI when an accelerated PyTorch implementation diverges from its reference.
+inputs:
+  spec:
+    description: Python verification file defining CASES, build_cases(), or reference/candidate/inputs.
+    required: true
+  report-directory:
+    description: Directory for JSON and Markdown reports.
+    required: false
+    default: accel-verify-results
+  python:
+    description: Python executable available on the runner.
+    required: false
+    default: python
+outputs:
+  status:
+    description: pass or fail.
+    value: ${{ steps.verify.outputs.status }}
+  exit-code:
+    description: Verifier process exit code.
+    value: ${{ steps.verify.outputs.exit-code }}
+  json-report:
+    description: Path to the JSON report.
+    value: ${{ steps.verify.outputs.json-report }}
+  markdown-report:
+    description: Path to the Markdown report.
+    value: ${{ steps.verify.outputs.markdown-report }}
+runs:
+  using: composite
+  steps:
+    - name: Verify accelerated implementation
+      id: verify
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        PYTHON_BIN: ${{ inputs.python }}
+        SPEC_PATH: ${{ inputs.spec }}
+        REPORT_DIRECTORY: ${{ inputs.report-directory }}
+      run: |
+        set -uo pipefail
+        mkdir -p "$REPORT_DIRECTORY"
+        export PYTHONPATH="$ACTION_PATH${PYTHONPATH:+:$PYTHONPATH}"
+        set +e
+        "$PYTHON_BIN" -m accel_verify verify "$SPEC_PATH" \
+          --json "$REPORT_DIRECTORY/report.json" \
+          --markdown "$REPORT_DIRECTORY/report.md"
+        exit_code=$?
+        set -e
+
+        if [[ "$exit_code" -eq 0 ]]; then
+          status=pass
+        else
+          status=fail
+        fi
+
+        printf 'status=%s\n' "$status" >> "$GITHUB_OUTPUT"
+        printf 'exit-code=%s\n' "$exit_code" >> "$GITHUB_OUTPUT"
+        printf 'json-report=%s/report.json\n' "$REPORT_DIRECTORY" >> "$GITHUB_OUTPUT"
+        printf 'markdown-report=%s/report.md\n' "$REPORT_DIRECTORY" >> "$GITHUB_OUTPUT"
+
+        if [[ -f "$REPORT_DIRECTORY/report.md" ]]; then
+          cat "$REPORT_DIRECTORY/report.md" >> "$GITHUB_STEP_SUMMARY"
+        else
+          printf '## Accel-Verify\n\nVerification failed before a report was produced.\n' \
+            >> "$GITHUB_STEP_SUMMARY"
+        fi
+        exit "$exit_code"
+branding:
+  icon: check-circle
+  color: green

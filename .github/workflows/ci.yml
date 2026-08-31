@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run unit tests
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e . --no-deps
+          python -m unittest discover -s tests -v
+      - name: Run passing Accel-Verify action
+        uses: ./
+        with:
+          spec: tests/fixtures/ci_verification.py
+          report-directory: accel-verify-results/pass
+      - name: Run expected-failure Accel-Verify action
+        id: expected_failure
+        continue-on-error: true
+        uses: ./
+        with:
+          spec: tests/fixtures/ci_failure.py
+          report-directory: accel-verify-results/expected-failure
+      - name: Confirm semantic mismatch blocks the action
+        if: always()
+        shell: bash
+        env:
+          STEP_OUTCOME: ${{ steps.expected_failure.outcome }}
+          VERIFY_STATUS: ${{ steps.expected_failure.outputs.status }}
+          VERIFY_EXIT_CODE: ${{ steps.expected_failure.outputs.exit-code }}
+        run: |
+          test "$STEP_OUTCOME" = failure
+          test "$VERIFY_STATUS" = fail
+          test "$VERIFY_EXIT_CODE" = 1
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: accel-verify-results
+          path: accel-verify-results/
+          if-no-files-found: error

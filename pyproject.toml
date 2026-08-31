@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "accel-verify"
+version = "0.1.0"
+description = "A minimal reference-versus-accelerated semantic verification harness"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["pytorch", "torch-compile", "triton", "cuda", "verification"]
+dependencies = ["torch>=2.4"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/JeevsidakSingh/accel-verify"
+Issues = "https://github.com/JeevsidakSingh/accel-verify/issues"
+Source = "https://github.com/JeevsidakSingh/accel-verify"
+
+[project.scripts]
+accel-verify = "accel_verify.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["accel_verify*"]
